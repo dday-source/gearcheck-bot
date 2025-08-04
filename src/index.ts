@@ -198,11 +198,18 @@ async function takeScreenshot(browser: Browser, url: string, type: string): Prom
   try {
     console.log(`📸 Taking ${type} screenshot...`);
     
-    // Set viewport - wider for armory to capture more gear
+    // Set viewport - wider and zoomed out for armory to capture more gear
     if (type === 'armory') {
-      await page.setViewport({ width: 1920, height: 1200 });
+      await page.setViewport({ 
+        width: 2400,  // Wider viewport
+        height: 1400, // Taller viewport
+        deviceScaleFactor: 0.8 // This effectively zooms out
+      });
     } else {
-      await page.setViewport({ width: 1920, height: 1080 });
+      await page.setViewport({ 
+        width: 1920, 
+        height: 1080 
+      });
     }
     
     // Go to page
@@ -213,15 +220,6 @@ async function takeScreenshot(browser: Browser, url: string, type: string): Prom
 
     // Wait a bit for dynamic content
     await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // For armory, try to zoom out to capture more
-    if (type === 'armory') {
-      await page.evaluate(() => {
-        document.body.style.zoom = '0.8'; // Zoom out to 80%
-      });
-      // Wait a bit for zoom to apply
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
 
     // Take screenshot
     const screenshot = await page.screenshot({ 
