@@ -108,7 +108,7 @@ client.on('messageCreate', async (message: Message) => {
 
     // Create response embed
     const embed = new EmbedBuilder()
-      .setColor(perfAvg >= 80 ? 0xFFD700 : 0xFF0000)
+      .setColor(perfAvg >= 70 ? 0xFFD700 : 0xFF0000)
       .setTitle(`Gear Check: ${characterName}`)
       .setDescription(`Verification for ${message.author}`)
       .addFields(
@@ -119,7 +119,7 @@ client.on('messageCreate', async (message: Message) => {
         },
         {
           name: '✅ Status',
-          value: perfAvg >= 80 ? 'Qualified for Stained' : 'Below 80 threshold',
+          value: perfAvg >= 70 ? 'Qualified for Stained' : 'Below 70 threshold',
           inline: true
         },
         {
@@ -144,7 +144,7 @@ client.on('messageCreate', async (message: Message) => {
     }
 
     // Assign role if qualified
-    if (perfAvg >= 80 && message.member) {
+    if (perfAvg >= 70 && message.member) {
       try {
         await message.member.roles.add(process.env.STAINED_ROLE_ID!);
         if (message.channel instanceof TextChannel) {
