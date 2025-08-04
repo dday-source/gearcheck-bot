@@ -46,27 +46,6 @@ client.on('messageCreate', async (message: Message) => {
     return;
   }
 
-  // Check if the character name matches their server nickname
-  if (message.member) {
-    // Get their server nickname (or username if no nickname)
-    const serverName = message.member.nickname || message.member.user.username;
-    
-    // Remove any special characters from server name for comparison
-    const cleanServerName = serverName.replace(/[^a-zA-Z]/g, '');
-    
-    // Case-insensitive comparison
-    if (cleanServerName.toLowerCase() !== characterName.toLowerCase()) {
-      await message.reply(
-        `❌ **Name Mismatch Detected**\n\n` +
-        `Your server name: **${serverName}**\n` +
-        `Character entered: **${characterName}**\n\n` +
-        `The character name must match your Discord server nickname.\n` +
-        `Please change your server nickname to match your character name, or enter the correct character name.`
-      );
-      return;
-    }
-  }
-
   // Check if already processing this user
   if (processing.has(message.author.id)) {
     await message.reply('⏳ Still processing your previous request...');
@@ -110,7 +89,7 @@ client.on('messageCreate', async (message: Message) => {
     const embed = new EmbedBuilder()
       .setColor(perfAvg >= 70 ? 0xFFD700 : 0xFF0000)
       .setTitle(`Gear Check: ${characterName}`)
-      .setDescription(`Verification for ${message.author}`)
+      .setDescription(`Verification requested by ${message.author}`)
       .addFields(
         {
           name: '📊 Best Performance Average',
@@ -121,11 +100,6 @@ client.on('messageCreate', async (message: Message) => {
           name: '✅ Status',
           value: perfAvg >= 70 ? 'Qualified for Stained' : 'Below 70 threshold',
           inline: true
-        },
-        {
-          name: '🔍 Verified',
-          value: `Character name matches server nickname ✓`,
-          inline: false
         }
       )
       .setTimestamp();
