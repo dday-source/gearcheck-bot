@@ -83,11 +83,32 @@ client.on('messageCreate', async (message: Message) => {
 
     // Remove loading reaction
     await message.reactions.removeAll();
-    await message.react('✅');
+    
+    // Determine which emoji to use based on performance
+    if (perfAvg >= 70) {
+      await message.react('✅');
+    } else {
+      await message.react('❌');
+    }
+
+    // Determine status and color based on performance tiers
+    let statusText = '';
+    let embedColor = 0xFF0000; // Default red
+    
+    if (perfAvg >= 90) {
+      statusText = 'Qualified for Peerless Scarred';
+      embedColor = 0x9B59B6; // Purple for elite
+    } else if (perfAvg >= 70) {
+      statusText = 'Qualified for Stained';
+      embedColor = 0xFFD700; // Gold
+    } else {
+      statusText = 'Below 70 threshold - Manual Review Required';
+      embedColor = 0xFF0000; // Red
+    }
 
     // Create response embed
     const embed = new EmbedBuilder()
-      .setColor(perfAvg >= 70 ? 0xFFD700 : 0xFF0000)
+      .setColor(embedColor)
       .setTitle(`Gear Check: ${characterName}`)
       .setDescription(`Verification requested by ${message.author}`)
       .addFields(
@@ -98,7 +119,7 @@ client.on('messageCreate', async (message: Message) => {
         },
         {
           name: '✅ Status',
-          value: perfAvg >= 70 ? 'Qualified for Stained' : 'Below 70 threshold',
+          value: statusText,
           inline: true
         }
       )
@@ -117,15 +138,45 @@ client.on('messageCreate', async (message: Message) => {
       });
     }
 
-    // Assign role if qualified
-    if (perfAvg >= 70 && message.member) {
-      try {
-        await message.member.roles.add(process.env.STAINED_ROLE_ID!);
-        if (message.channel instanceof TextChannel) {
-          await message.channel.send(`✅ ${message.author} has been granted the **Stained** role!`);
+    // Handle role assignment based on performance tier
+    if (message.member) {
+      if (perfAvg >= 90) {
+        // Assign Peerless Scarred role for 90+
+        try {
+          await message.member.roles.add(process.env.PEERLESS_SCARRED_ROLE_ID!);
+          if (message.channel instanceof TextChannel) {
+            await message.channel.send(`🏆 ${message.author} has been granted the **Peerless Scarred** role for exceptional performance!`);
+          }
+        } catch (error) {
+          console.error('Failed to assign Peerless Scarred role:', error);
         }
-      } catch (error) {
-        console.error('Failed to assign role:', error);
+      } else if (perfAvg >= 70) {
+        // Assign Stained role for 70-89
+        try {
+          await message.member.roles.add(process.env.STAINED_ROLE_ID!);
+          if (message.channel instanceof TextChannel) {
+            await message.channel.send(`✅ ${message.author} has been granted the **Stained** role!`);
+          }
+        } catch (error) {
+          console.error('Failed to assign Stained role:', error);
+        }
+      } else {
+        // Below 70 - ping for manual review
+        if (message.channel instanceof TextChannel) {
+          const reaperRoleId = process.env.REAPER_ROLE_ID;
+          const goblinRoleId = process.env.GOBLIN_ROLE_ID;
+          
+          let pingMessage = `⚠️ **Manual Review Required**\n\n`;
+          pingMessage += `${message.author} has a performance average below 70.\n`;
+          
+          if (reaperRoleId && goblinRoleId) {
+            pingMessage += `<@&${reaperRoleId}> <@&${goblinRoleId}> - Please review this application.`;
+          } else {
+            pingMessage += `Leadership - Please review this application.`;
+          }
+          
+          await message.channel.send(pingMessage);
+        }
       }
     }
 
@@ -147,8 +198,12 @@ async function takeScreenshot(browser: Browser, url: string, type: string): Prom
   try {
     console.log(`📸 Taking ${type} screenshot...`);
     
-    // Set viewport
-    await page.setViewport({ width: 1920, height: 1080 });
+    // Set viewport - wider for armory to capture more gear
+    if (type === 'armory') {
+      await page.setViewport({ width: 1920, height: 1200 });
+    } else {
+      await page.setViewport({ width: 1920, height: 1080 });
+    }
     
     // Go to page
     await page.goto(url, { 
@@ -158,6 +213,15 @@ async function takeScreenshot(browser: Browser, url: string, type: string): Prom
 
     // Wait a bit for dynamic content
     await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // For armory, try to zoom out to capture more
+    if (type === 'armory') {
+      await page.evaluate(() => {
+        document.body.style.zoom = '0.8'; // Zoom out to 80%
+      });
+      // Wait a bit for zoom to apply
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
 
     // Take screenshot
     const screenshot = await page.screenshot({ 
